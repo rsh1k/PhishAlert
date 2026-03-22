@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>PhishGuard AI Pro</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #080b12;
+      --surface: #0d1117;
+      --surface2: #161b22;
+      --surface3: #21262d;
+      --border: #30363d;
+      --accent: #00d4ff;
+      --accent-dim: rgba(0,212,255,0.08);
+      --accent-glow: rgba(0,212,255,0.25);
+      --green: #39d353;
+      --green-dim: rgba(57,211,83,0.08);
+      --danger: #ff4757;
+      --danger-dim: rgba(255,71,87,0.08);
+      --warning: #ffa502;
+      --warning-dim: rgba(255,165,2,0.08);
+      --purple: #bd93f9;
+      --text: #cdd9e5;
+      --text-dim: #768390;
+      --text-faint: #444c56;
+      --mono: 'Space Mono', monospace;
+      --sans: 'Inter', sans-serif;
+      --radius: 8px;
+    }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { width:420px; min-height:560px; background:var(--bg); color:var(--text); font-family:var(--sans); font-size:13px; overflow-x:hidden; }
+
+    /* ── Scrollbar ── */
+    ::-webkit-scrollbar { width:4px; }
+    ::-webkit-scrollbar-track { background:transparent; }
+    ::-webkit-scrollbar-thumb { background:var(--border); border-radius:4px; }
+
+    /* ── Header ── */
+    .header {
+      padding:12px 16px;
+      background:var(--surface);
+      border-bottom:1px solid var(--border);
+      display:flex; align-items:center; gap:10px;
+      position:sticky; top:0; z-index:100;
+    }
+    .logo {
+      width:30px; height:30px; background:linear-gradient(135deg,#00d4ff,#0080ff);
+      border-radius:7px; display:flex; align-items:center; justify-content:center; flex-shrink:0;
+    }
+    .logo svg { width:16px; height:16px; }
+    .header-title { font-family:var(--mono); font-size:12px; font-weight:700; color:var(--text); letter-spacing:.5px; }
+    .header-sub { font-size:10px; color:var(--text-dim); margin-top:1px; }
+    .header-right { margin-left:auto; display:flex; align-items:center; gap:8px; }
+    .pulse { width:7px; height:7px; border-radius:50%; background:var(--green); box-shadow:0 0 6px var(--green); animation:pulse 2s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1}50%{opacity:.3} }
+    .settings-btn { background:none; border:none; color:var(--text-dim); cursor:pointer; padding:2px; border-radius:4px; transition:color .2s; }
+    .settings-btn:hover { color:var(--text); }
+
+    /* ── Tabs ── */
+    .tabs {
+      display:flex; background:var(--surface);
+      border-bottom:1px solid var(--border); overflow-x:auto;
+    }
+    .tab {
+      flex:1; min-width:70px; padding:9px 4px; text-align:center;
+      font-size:10px; font-family:var(--mono); color:var(--text-dim); letter-spacing:.3px;
+      cursor:pointer; border-bottom:2px solid transparent; transition:all .2s;
+      white-space:nowrap; background:none; border-top:none; border-left:none; border-right:none;
+    }
+    .tab:hover { color:var(--text); }
+    .tab.active { color:var(--accent); border-bottom-color:var(--accent); }
+    .tab-badge {
+      display:inline-block; background:var(--danger); color:#fff;
+      border-radius:8px; padding:1px 5px; font-size:9px; margin-left:3px; vertical-align:middle;
+    }
+
+    /* ── Tab panes ── */
+    .pane { display:none; padding:14px 16px; max-height:480px; overflow-y:auto; }
+    .pane.active { display:block; }
+
+    /* ── Settings panel ── */
+    .settings-panel {
+      display:none; background:var(--surface); border-bottom:1px solid var(--border); padding:14px 16px;
+    }
+    .settings-panel.open { display:block; }
+    .settings-grid { display:grid; gap:10px; }
+    .setting-row { display:flex; flex-direction:column; gap:4px; }
+    .setting-label { font-size:10px; color:var(--text-dim); font-family:var(--mono); letter-spacing:.5px; text-transform:uppercase; }
+    .setting-input-row { display:flex; gap:6px; }
+    .inp {
+      flex:1; background:var(--surface2); border:1px solid var(--border); border-radius:var(--radius);
+      padding:7px 10px; color:var(--text); font-family:var(--mono); font-size:11px; outline:none; transition:border-color .2s;
+    }
+    .inp:focus { border-color:var(--accent); }
+    .inp::placeholder { color:var(--text-faint); }
+    .btn {
+      background:var(--accent-dim); border:1px solid var(--accent); color:var(--accent);
+      border-radius:var(--radius); padding:7px 12px; font-family:var(--mono); font-size:10px;
+      cursor:pointer; transition:all .2s; white-space:nowrap;
+    }
+    .btn:hover { background:var(--accent); color:var(--bg); }
+    .btn:disabled { opacity:.4; cursor:not-allowed; }
+    .btn-danger { border-color:var(--danger); color:var(--danger); background:var(--danger-dim); }
+    .btn-danger:hover { background:var(--danger); color:#fff; }
+    .btn-green { border-color:var(--green); color:var(--green); background:var(--green-dim); }
+    .btn-green:hover { background:var(--green); color:var(--bg); }
+    .toggle-row { display:flex; align-items:center; justify-content:space-between; }
+    .toggle { position:relative; width:36px; height:20px; }
+    .toggle input { opacity:0; width:0; height:0; }
+    .toggle-slider {
+      position:absolute; inset:0; background:var(--surface3); border-radius:20px;
+      cursor:pointer; transition:.3s;
+    }
+    .toggle-slider::before {
+      content:''; position:absolute; width:14px; height:14px; left:3px; top:3px;
+      background:var(--text-dim); border-radius:50%; transition:.3s;
+    }
+    .toggle input:checked + .toggle-slider { background:var(--accent); }
+    .toggle input:checked + .toggle-slider::before { transform:translateX(16px); background:#fff; }
+
+    /* ── Section labels ── */
+    .section-label {
+      font-family:var(--mono); font-size:9px; color:var(--text-faint); letter-spacing:1px;
+      text-transform:uppercase; margin-bottom:8px; padding-bottom:4px; border-bottom:1px solid var(--border);
+    }
+
+    /* ── Analyze button ── */
+    .analyze-btn {
+      width:100%; background:linear-gradient(135deg,#00d4ff,#0066ff);
+      color:#000; border:none; border-radius:var(--radius); padding:11px;
+      font-family:var(--mono); font-size:11px; font-weight:700; cursor:pointer;
+      transition:all .2s; letter-spacing:.5px; display:flex; align-items:center; justify-content:center; gap:8px;
+      margin-bottom:12px;
+    }
+    .analyze-btn:hover { opacity:.9; transform:translateY(-1px); box-shadow:0 4px 20px rgba(0,212,255,.3); }
+    .analyze-btn:disabled { background:var(--surface2); color:var(--text-dim); transform:none; box-shadow:none; border:1px solid var(--border); }
+
+    /* ── Loading ── */
+    .loading { display:none; flex-direction:column; align-items:center; gap:12px; padding:24px; }
+    .loading.on { display:flex; }
+    .loading-ring {
+      width:44px; height:44px; border:2px solid var(--border);
+      border-top-color:var(--accent); border-radius:50%; animation:spin .7s linear infinite;
+    }
+    @keyframes spin { to{transform:rotate(360deg)} }
+    .loading-steps { text-align:center; }
+    .loading-step { font-size:11px; color:var(--text-dim); font-family:var(--mono); }
+    .loading-sub { font-size:10px; color:var(--text-faint); margin-top:3px; }
+
+    /* ── Verdict card ── */
+    .verdict-card {
+      border-radius:10px; padding:14px; margin-bottom:12px; border:1px solid;
+    }
+    .verdict-card.phishing { background:var(--danger-dim); border-color:var(--danger); }
+    .verdict-card.suspicious { background:var(--warning-dim); border-color:var(--warning); }
+    .verdict-card.safe { background:var(--green-dim); border-color:var(--green); }
+    .verdict-top { display:flex; align-items:center; gap:10px; margin-bottom:8px; }
+    .verdict-icon { font-size:24px; line-height:1; }
+    .verdict-meta { flex:1; }
+    .verdict-title { font-family:var(--mono); font-size:13px; font-weight:700; }
+    .verdict-card.phishing .verdict-title { color:var(--danger); }
+    .verdict-card.suspicious .verdict-title { color:var(--warning); }
+    .verdict-card.safe .verdict-title { color:var(--green); }
+    .verdict-confidence { font-size:10px; color:var(--text-dim); margin-top:2px; }
+    .verdict-summary { font-size:11px; color:var(--text-dim); line-height:1.6; }
+
+    /* ── Scores row ── */
+    .scores-grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-bottom:12px; }
+    .score-card {
+      background:var(--surface2); border:1px solid var(--border); border-radius:var(--radius);
+      padding:10px; text-align:center;
+    }
+    .score-val { font-family:var(--mono); font-size:18px; font-weight:700; }
+    .score-val.red { color:var(--danger); }
+    .score-val.yellow { color:var(--warning); }
+    .score-val.green { color:var(--green); }
+    .score-val.blue { color:var(--accent); }
+    .score-lbl { font-size:9px; color:var(--text-faint); margin-top:2px; letter-spacing:.5px; text-transform:uppercase; }
+
+    /* ── Risk bar ── */
+    .risk-row { display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; }
+    .risk-label { font-size:10px; color:var(--text-dim); font-family:var(--mono); }
+    .risk-num { font-size:11px; font-family:var(--mono); font-weight:700; }
+    .bar-bg { height:5px; background:var(--surface3); border-radius:3px; overflow:hidden; margin-bottom:12px; }
+    .bar-fill { height:100%; border-radius:3px; transition:width 1s cubic-bezier(.4,0,.2,1); }
+
+    /* ── Analysis sections ── */
+    .analysis-block { margin-bottom:12px; }
+    .analysis-header {
+      display:flex; align-items:center; gap:6px; cursor:pointer;
+      padding:8px 10px; background:var(--surface2); border-radius:var(--radius);
+      border:1px solid var(--border); transition:border-color .2s; margin-bottom:0;
+    }
+    .analysis-header:hover { border-color:var(--accent); }
+    .analysis-header-title { font-size:11px; font-weight:600; flex:1; }
+    .analysis-header-badge { font-size:9px; font-family:var(--mono); padding:2px 6px; border-radius:4px; }
+    .badge-danger { background:var(--danger-dim); color:var(--danger); border:1px solid var(--danger); }
+    .badge-warning { background:var(--warning-dim); color:var(--warning); border:1px solid var(--warning); }
+    .badge-safe { background:var(--green-dim); color:var(--green); border:1px solid var(--green); }
+    .badge-neutral { background:var(--surface3); color:var(--text-dim); border:1px solid var(--border); }
+    .chevron { color:var(--text-faint); transition:transform .2s; font-size:10px; }
+    .analysis-body {
+      display:none; padding:10px; background:var(--surface2);
+      border:1px solid var(--border); border-top:none;
+      border-radius:0 0 var(--radius) var(--radius);
+    }
+    .analysis-body.open { display:block; }
+
+    /* ── Flags ── */
+    .flag-item {
+      display:flex; gap:8px; padding:6px 8px; border-radius:6px;
+      margin-bottom:4px; background:var(--surface3);
+    }
+    .flag-dot { width:6px; height:6px; border-radius:50%; flex-shrink:0; margin-top:4px; }
+    .flag-item.danger .flag-dot { background:var(--danger); }
+    .flag-item.warning .flag-dot { background:var(--warning); }
+    .flag-item.safe .flag-dot { background:var(--green); }
+    .flag-text { font-size:11px; line-height:1.5; }
+    .flag-cat { font-size:9px; color:var(--text-faint); margin-left:4px; font-family:var(--mono); }
+
+    /* ── Key-value rows ── */
+    .kv-row { display:flex; justify-content:space-between; align-items:center; padding:5px 0; border-bottom:1px solid var(--border); }
+    .kv-row:last-child { border-bottom:none; }
+    .kv-key { font-size:10px; color:var(--text-dim); }
+    .kv-val { font-size:10px; font-family:var(--mono); font-weight:600; }
+
+    /* ── Recommendations ── */
+    .rec-item { display:flex; gap:8px; font-size:11px; padding:5px 0; color:var(--text-dim); line-height:1.5; }
+    .rec-arrow { color:var(--accent); flex-shrink:0; }
+
+    /* ── VirusTotal tab ── */
+    .vt-manual { margin-bottom:14px; }
+    .vt-manual-row { display:flex; gap:6px; }
+    .vt-result-card {
+      background:var(--surface2); border:1px solid var(--border); border-radius:var(--radius);
+      margin-bottom:8px; overflow:hidden;
+    }
+    .vt-card-header {
+      display:flex; align-items:center; gap:8px; padding:10px 12px;
+      cursor:pointer; transition:background .2s;
+    }
+    .vt-card-header:hover { background:var(--surface3); }
+    .vt-card-type { font-size:9px; font-family:var(--mono); color:var(--text-faint); text-transform:uppercase; letter-spacing:.5px; min-width:30px; }
+    .vt-card-name { flex:1; font-size:11px; word-break:break-all; line-height:1.3; }
+    .vt-card-score { font-family:var(--mono); font-size:12px; font-weight:700; white-space:nowrap; }
+    .vt-card-score.clean { color:var(--green); }
+    .vt-card-score.bad { color:var(--danger); }
+    .vt-card-score.warn { color:var(--warning); }
+    .vt-vendors { display:none; padding:10px 12px; border-top:1px solid var(--border); max-height:200px; overflow-y:auto; }
+    .vt-vendors.open { display:block; }
+    .vendor-grid { display:grid; grid-template-columns:1fr 1fr; gap:4px; }
+    .vendor-item { display:flex; justify-content:space-between; font-size:10px; padding:3px 6px; border-radius:4px; }
+    .vendor-item.flagged { background:var(--danger-dim); color:var(--danger); }
+    .vendor-item.clean { color:var(--text-faint); }
+    .vendor-name { font-weight:500; }
+    .vendor-result { font-family:var(--mono); font-size:9px; }
+    .vt-stats-bar { display:flex; gap:6px; padding:8px 12px; background:var(--surface3); font-size:10px; font-family:var(--mono); }
+    .vt-stat { display:flex; align-items:center; gap:4px; }
+    .vt-stat-dot { width:8px; height:8px; border-radius:50%; }
+    .vt-empty { text-align:center; padding:20px; color:var(--text-faint); font-size:12px; }
+
+    /* ── History tab ── */
+    .history-item {
+      display:flex; gap:10px; align-items:center; padding:10px;
+      background:var(--surface2); border:1px solid var(--border); border-radius:var(--radius);
+      margin-bottom:6px; cursor:pointer; transition:border-color .2s;
+    }
+    .history-item:hover { border-color:var(--accent); }
+    .history-verdict { width:8px; height:8px; border-radius:50%; flex-shrink:0; margin-top:4px; }
+    .history-verdict.phishing { background:var(--danger); box-shadow:0 0 6px var(--danger); }
+    .history-verdict.suspicious { background:var(--warning); }
+    .history-verdict.safe { background:var(--green); }
+    .history-subject { font-size:11px; flex:1; line-height:1.4; }
+    .history-meta { font-size:9px; color:var(--text-faint); font-family:var(--mono); }
+    .history-score { font-family:var(--mono); font-size:11px; font-weight:700; }
+
+    /* ── Stats tab ── */
+    .stats-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:14px; }
+    .stat-card {
+      background:var(--surface2); border:1px solid var(--border); border-radius:var(--radius);
+      padding:14px; text-align:center;
+    }
+    .stat-num { font-family:var(--mono); font-size:28px; font-weight:700; }
+    .stat-lbl { font-size:10px; color:var(--text-dim); margin-top:4px; }
+    .stat-card.danger .stat-num { color:var(--danger); }
+    .stat-card.warning .stat-num { color:var(--warning); }
+    .stat-card.safe .stat-num { color:var(--green); }
+    .stat-card.accent .stat-num { color:var(--accent); }
+
+    /* ── Error ── */
+    .error-bar {
+      display:none; margin:0 16px 10px; padding:8px 12px;
+      background:var(--danger-dim); border:1px solid var(--danger);
+      border-radius:var(--radius); font-size:11px; color:var(--danger);
+    }
+    .error-bar.on { display:block; }
+
+    /* ── Empty state ── */
+    .empty { padding:30px 16px; text-align:center; }
+    .empty-icon { font-size:36px; margin-bottom:10px; }
+    .empty-text { font-size:12px; color:var(--text-dim); line-height:1.7; }
+
+    /* ── Export button row ── */
+    .action-row { display:flex; gap:6px; margin-bottom:12px; }
+    .action-row .btn { flex:1; font-size:10px; padding:7px; text-align:center; }
+
+    /* ── Footer ── */
+    .footer {
+      padding:8px 16px; border-top:1px solid var(--border); display:flex;
+      align-items:center; justify-content:space-between; background:var(--surface);
+    }
+    .footer-text { font-size:9px; color:var(--text-faint); font-family:var(--mono); }
+
+    /* ── Misc ── */
+    .chip {
+      display:inline-block; padding:2px 7px; border-radius:10px; font-size:9px;
+      font-family:var(--mono); border:1px solid; margin:2px;
+    }
+    .chip.danger { color:var(--danger); border-color:var(--danger); background:var(--danger-dim); }
+    .chip.warning { color:var(--warning); border-color:var(--warning); background:var(--warning-dim); }
+    .chip.safe { color:var(--green); border-color:var(--green); background:var(--green-dim); }
+    .chip.neutral { color:var(--text-dim); border-color:var(--border); background:var(--surface3); }
+  </style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+  <div class="logo">
+    <svg viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+    </svg>
+  </div>
+  <div>
+    <div class="header-title">PHISHGUARD AI PRO</div>
+    <div class="header-sub">DeepSeek + VirusTotal · v2.0</div>
+  </div>
+  <div class="header-right">
+    <div class="pulse" id="statusPulse"></div>
+    <button class="settings-btn" id="settingsToggle" title="Settings">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+      </svg>
+    </button>
+  </div>
+</div>
+
+<!-- Settings Panel -->
+<div class="settings-panel" id="settingsPanel">
+  <div class="settings-grid">
+    <div class="setting-row">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+        <div class="setting-label">DeepSeek API Key</div>
+        <span id="dsStatus" style="font-size:10px;font-family:var(--mono)">⚠ Not set</span>
+      </div>
+      <div class="setting-input-row">
+        <input type="password" class="inp" id="deepseekKey" placeholder="sk-..." autocomplete="off">
+        <button class="btn" id="saveDeepseek">SAVE 🔒</button>
+        <button class="btn btn-danger" id="removeDeepseek" title="Remove key" style="padding:7px 8px">✕</button>
+      </div>
+      <div style="font-size:9px;color:var(--text-faint);margin-top:4px">Encrypted with AES-256-GCM · NIST SP 800-132</div>
+    </div>
+    <div class="setting-row">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+        <div class="setting-label">VirusTotal API Key</div>
+        <span id="vtStatus" style="font-size:10px;font-family:var(--mono)">⚠ Not set</span>
+      </div>
+      <div class="setting-input-row">
+        <input type="password" class="inp" id="vtKey" placeholder="Your VT API key..." autocomplete="off">
+        <button class="btn" id="saveVt">SAVE 🔒</button>
+        <button class="btn btn-danger" id="removeVt" title="Remove key" style="padding:7px 8px">✕</button>
+      </div>
+      <div style="font-size:9px;color:var(--text-faint);margin-top:4px">Keys never leave the extension — stored encrypted locally</div>
+    </div>
+    <div class="setting-row">
+      <div class="toggle-row">
+        <div>
+          <div class="setting-label">Auto-scan emails</div>
+          <div style="font-size:10px;color:var(--text-faint)">Scan when email is opened</div>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" id="autoScanToggle">
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Tabs -->
+<div class="tabs">
+  <button class="tab active" data-tab="scan">SCAN</button>
+  <button class="tab" data-tab="virustotal">VIRUSTOTAL</button>
+  <button class="tab" data-tab="history">HISTORY <span class="tab-badge" id="historyBadge" style="display:none">0</span></button>
+  <button class="tab" data-tab="stats">STATS</button>
+</div>
+
+<!-- Error bar -->
+<div class="error-bar" id="errorBar"></div>
+
+<!-- ══════════════════════════════════════════════════════════════ -->
+<!-- TAB: SCAN -->
+<!-- ══════════════════════════════════════════════════════════════ -->
+<div class="pane active" id="pane-scan">
+  <button class="analyze-btn" id="analyzeBtn">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+    SCAN CURRENT EMAIL
+  </button>
+
+  <!-- Loading -->
+  <div class="loading" id="loading">
+    <div class="loading-ring"></div>
+    <div class="loading-steps">
+      <div class="loading-step" id="loadingStep">Extracting email content...</div>
+      <div class="loading-sub" id="loadingSub">Running AI + VirusTotal in parallel</div>
+    </div>
+  </div>
+
+  <!-- Results -->
+  <div id="scanResults" style="display:none">
+
+    <!-- Action row -->
+    <div class="action-row">
+      <button class="btn btn-green" id="exportBtn">⬇ EXPORT REPORT</button>
+      <button class="btn" id="copyBtn">⎘ COPY</button>
+    </div>
+
+    <!-- Verdict -->
+    <div class="verdict-card" id="verdictCard">
+      <div class="verdict-top">
+        <div class="verdict-icon" id="verdictIcon"></div>
+        <div class="verdict-meta">
+          <div class="verdict-title" id="verdictTitle"></div>
+          <div class="verdict-confidence" id="verdictConfidence"></div>
+        </div>
+      </div>
+      <div class="verdict-summary" id="verdictSummary"></div>
+    </div>
+
+    <!-- Score cards -->
+    <div class="scores-grid">
+      <div class="score-card">
+        <div class="score-val" id="riskVal">—</div>
+        <div class="score-lbl">RISK SCORE</div>
+      </div>
+      <div class="score-card">
+        <div class="score-val" id="manipVal">—</div>
+        <div class="score-lbl">MANIPULATION</div>
+      </div>
+      <div class="score-card">
+        <div class="score-val" id="repVal">—</div>
+        <div class="score-lbl">SENDER REP</div>
+      </div>
+    </div>
+
+    <!-- Risk bar -->
+    <div class="risk-row">
+      <span class="risk-label">OVERALL RISK</span>
+      <span class="risk-num" id="riskNum">0/100</span>
+    </div>
+    <div class="bar-bg"><div class="bar-fill" id="riskBar" style="width:0%"></div></div>
+
+    <!-- Sender Analysis -->
+    <div class="analysis-block">
+      <div class="analysis-header" data-section="sender">
+        <span>👤</span>
+        <span class="analysis-header-title">Sender Analysis</span>
+        <span class="analysis-header-badge" id="senderBadge"></span>
+        <span class="chevron">▼</span>
+      </div>
+      <div class="analysis-body" id="senderBody"></div>
+    </div>
+
+    <!-- Social Engineering -->
+    <div class="analysis-block">
+      <div class="analysis-header" data-section="social">
+        <span>🧠</span>
+        <span class="analysis-header-title">Social Engineering</span>
+        <span class="analysis-header-badge" id="socialBadge"></span>
+        <span class="chevron">▼</span>
+      </div>
+      <div class="analysis-body" id="socialBody"></div>
+    </div>
+
+    <!-- Header Analysis -->
+    <div class="analysis-block">
+      <div class="analysis-header" data-section="headers">
+        <span>📋</span>
+        <span class="analysis-header-title">Header Analysis</span>
+        <span class="analysis-header-badge" id="headerBadge"></span>
+        <span class="chevron">▼</span>
+      </div>
+      <div class="analysis-body" id="headerBody"></div>
+    </div>
+
+    <!-- Flags -->
+    <div class="analysis-block">
+      <div class="analysis-header" data-section="flags">
+        <span>🚩</span>
+        <span class="analysis-header-title">Detected Signals</span>
+        <span class="analysis-header-badge" id="flagsBadge"></span>
+        <span class="chevron">▼</span>
+      </div>
+      <div class="analysis-body" id="flagsBody"></div>
+    </div>
+
+    <!-- Recommendations -->
+    <div class="analysis-block">
+      <div class="analysis-header" data-section="recs">
+        <span>💡</span>
+        <span class="analysis-header-title">Recommendations</span>
+        <span class="analysis-header-badge badge-neutral">ACTION</span>
+        <span class="chevron">▼</span>
+      </div>
+      <div class="analysis-body" id="recsBody"></div>
+    </div>
+
+  </div>
+
+  <!-- Empty state -->
+  <div class="empty" id="emptyScan">
+    <div class="empty-icon">🛡️</div>
+    <div class="empty-text">Open an email in Gmail or Outlook,<br>then click Scan to analyze it with<br>AI + VirusTotal simultaneously.</div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════ -->
+<!-- TAB: VIRUSTOTAL -->
+<!-- ══════════════════════════════════════════════════════════════ -->
+<div class="pane" id="pane-virustotal">
+  <div class="vt-manual">
+    <div class="section-label">MANUAL LOOKUP</div>
+    <div class="vt-manual-row">
+      <input type="text" class="inp" id="vtQuery" placeholder="URL, IP address, or file hash (MD5/SHA256)...">
+      <button class="btn" id="vtScanBtn">SCAN</button>
+    </div>
+    <div style="font-size:10px;color:var(--text-faint);margin-top:5px;">Auto-detects type: URL · IP · Hash</div>
+  </div>
+
+  <div class="section-label">SCAN RESULTS</div>
+  <div id="vtResults">
+    <div class="vt-empty">No scans yet. Enter a URL, IP, or hash above, or scan an email on the Scan tab.</div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════ -->
+<!-- TAB: HISTORY -->
+<!-- ══════════════════════════════════════════════════════════════ -->
+<div class="pane" id="pane-history">
+  <div class="action-row">
+    <button class="btn btn-danger" id="clearHistoryBtn">🗑 CLEAR ALL</button>
+  </div>
+  <div class="section-label">RECENT SCANS</div>
+  <div id="historyList">
+    <div class="empty">
+      <div class="empty-icon">📂</div>
+      <div class="empty-text">No scan history yet.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════ -->
+<!-- TAB: STATS -->
+<!-- ══════════════════════════════════════════════════════════════ -->
+<div class="pane" id="pane-stats">
+  <div class="section-label">THREAT STATISTICS</div>
+  <div class="stats-grid">
+    <div class="stat-card accent">
+      <div class="stat-num" id="statTotal">0</div>
+      <div class="stat-lbl">Total Scanned</div>
+    </div>
+    <div class="stat-card danger">
+      <div class="stat-num" id="statPhishing">0</div>
+      <div class="stat-lbl">Phishing Found</div>
+    </div>
+    <div class="stat-card warning">
+      <div class="stat-num" id="statSuspicious">0</div>
+      <div class="stat-lbl">Suspicious</div>
+    </div>
+    <div class="stat-card safe">
+      <div class="stat-num" id="statSafe">0</div>
+      <div class="stat-lbl">Safe Emails</div>
+    </div>
+  </div>
+  <div class="stat-card" style="margin-bottom:8px;padding:14px">
+    <div class="stat-num accent" id="statVtThreats" style="color:var(--accent)">0</div>
+    <div class="stat-lbl">VT Threats Caught</div>
+  </div>
+  <div class="section-label" style="margin-top:14px">DETECTION RATE</div>
+  <div class="bar-bg" style="height:8px;margin-bottom:4px"><div class="bar-fill" id="detectionBar" style="width:0%;background:var(--danger)"></div></div>
+  <div style="font-size:10px;color:var(--text-dim);text-align:center;" id="detectionLabel">—</div>
+</div>
+
+<!-- Footer -->
+<div class="footer">
+  <span class="footer-text">AES-256-GCM · NIST SP 800-53</span>
+  <span class="footer-text" id="footerStatus">Ready</span>
+</div>
+
+<script src="popup.js"></script>
+</body>
+</html>

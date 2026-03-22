@@ -1,0 +1,47 @@
+/* content.css — PhishGuard AI Pro in-page badge */
+@import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@700&display=swap');
+
+.phishguard-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
+  border-radius: 20px;
+  font-family: 'Space Mono', monospace;
+  font-size: 10px;
+  font-weight: 700;
+  margin-left: 8px;
+  vertical-align: middle;
+  cursor: default;
+  border: 1px solid;
+  letter-spacing: 0.3px;
+}
+
+.phishguard-badge.phishing {
+  background: rgba(255, 71, 87, 0.12);
+  border-color: rgba(255, 71, 87, 0.5);
+  color: #ff4757;
+}
+
+.phishguard-badge.suspicious {
+  background: rgba(255, 165, 2, 0.12);
+  border-color: rgba(255, 165, 2, 0.5);
+  color: #ffa502;
+}
+
+.phishguard-badge.safe {
+  background: rgba(57, 211, 83, 0.12);
+  border-color: rgba(57, 211, 83, 0.5);
+  color: #39d353;
+}
+
+.phishguard-badge .badge-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.phishguard-badge.phishing .badge-dot { background: #ff4757; }
+.phishguard-badge.suspicious .badge-dot { background: #ffa502; }
+.phishguard-badge.safe .badge-dot { background: #39d353; }
